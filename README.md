@@ -1,16 +1,20 @@
-# React + Vite
+# Quiz Companion (Adaptive Learning Platform)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+BACSE202 course project: React front end, Express API and a PostgreSQL database.
 
-Currently, two official plugins are available:
+## Setup
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+1. Create a database: `createdb quiz_companion`
+2. Copy `.env.example` to `.env.local` and set `DATABASE_URL` (your PostgreSQL password).
+3. `npm install`
+4. `npm run db:setup` runs `db/schema.sql` (10 tables) and `db/seed.sql` (36 sample rows).
+5. `npm run dev:all` starts the API on :3000 and the web app on :5173.
 
-## React Compiler
+## Layout
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- `db/` DDL (`schema.sql`), sample data (`seed.sql`), checks (`verify.sql`)
+- `server/` Express + `pg` API (retrieval and INSERT / UPDATE / DELETE)
+- `src/` React pages: Dashboard, My Learning, Quizzes, Learning Items, Topics
+- `docs/` completed Phase 2 deck and the script that built it
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Business logic (functions, triggers, views) is not in this branch yet.
