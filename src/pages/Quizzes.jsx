@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
-import { Brain, Plus } from "lucide-react";
+import { Brain, ListChecks, PenLine, Plus } from "lucide-react";
 import { api } from "../services/api";
 import { EmptyState, ErrorBanner, PageHeader } from "../components/common";
+import TakeQuiz from "./TakeQuiz";
 
 const EMPTY_QUESTION = { question_text: "", correct_answer: "", marks: 2 };
 
-export default function Quizzes() {
+export default function Quizzes({ userId }) {
+  const [mode, setMode] = useState("take");
   const [quizzes, setQuizzes] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [questions, setQuestions] = useState([]);
@@ -56,9 +58,26 @@ export default function Quizzes() {
     <>
       <PageHeader
         eyebrow={<><Brain size={14} /> QUIZZES</>}
-        title="Quiz question bank"
-        subtitle="Questions are a weak entity: each is identified by quiz and question number."
-      />
+        title={mode === "take" ? "Take a quiz" : "Quiz question bank"}
+        subtitle={
+          mode === "take"
+            ? "Answers are graded in the database and saved as a new attempt."
+            : "Questions are a weak entity: each is identified by quiz and question number."
+        }
+      >
+        <div className="category-filters">
+          <button type="button"
+            className={`category-filter ${mode === "take" ? "active" : ""}`}
+            aria-pressed={mode === "take"} onClick={() => setMode("take")}>
+            <PenLine size={14} /> Take quiz
+          </button>
+          <button type="button"
+            className={`category-filter ${mode === "bank" ? "active" : ""}`}
+            aria-pressed={mode === "bank"} onClick={() => setMode("bank")}>
+            <ListChecks size={14} /> Question bank
+          </button>
+        </div>
+      </PageHeader>
       <ErrorBanner message={error} onClose={() => setError("")} />
 
       {quizzes.length === 0 ? (
@@ -76,52 +95,56 @@ export default function Quizzes() {
             ))}
           </div>
 
-          <section className="two-column">
-            <div className="panel glass-panel">
-              <h2 className="panel-title">{quiz?.title}</h2>
-              <p className="item-meta">
-                {quiz?.topic} · {quiz?.time_limit_min} min · pass mark {quiz?.pass_mark}% ·{" "}
-                {totalMarks} total marks
-              </p>
-              {questions.length === 0 ? (
-                <EmptyState title="No questions yet" />
-              ) : (
-                <ol className="question-list">
-                  {questions.map((q) => (
-                    <li key={q.question_no}>
-                      <div className="question-head">
-                        <strong>Q{q.question_no}. {q.question_text}</strong>
-                        <span className="tag">{q.marks} marks</span>
-                      </div>
-                      <div className="cell-note">Answer: {q.correct_answer}</div>
-                    </li>
-                  ))}
-                </ol>
-              )}
-            </div>
+          {mode === "take" ? (
+            <TakeQuiz key={`${selectedId}-${userId}`} quizId={selectedId} userId={userId} />
+          ) : (
+            <section className="two-column">
+              <div className="panel glass-panel">
+                <h2 className="panel-title">{quiz?.title}</h2>
+                <p className="item-meta">
+                  {quiz?.topic} · {quiz?.time_limit_min} min · pass mark {quiz?.pass_mark}% ·{" "}
+                  {totalMarks} total marks
+                </p>
+                {questions.length === 0 ? (
+                  <EmptyState title="No questions yet" />
+                ) : (
+                  <ol className="question-list">
+                    {questions.map((q) => (
+                      <li key={q.question_no}>
+                        <div className="question-head">
+                          <strong>Q{q.question_no}. {q.question_text}</strong>
+                          <span className="tag">{q.marks} marks</span>
+                        </div>
+                        <div className="cell-note">Answer: {q.correct_answer}</div>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </div>
 
-            <form className="panel glass-panel form-panel" onSubmit={handleSubmit}>
-              <h2 className="panel-title">Add a question</h2>
-              <label>
-                Question
-                <textarea required rows={3} value={form.question_text}
-                  onChange={(e) => setForm({ ...form, question_text: e.target.value })} />
-              </label>
-              <label>
-                Correct answer
-                <input required value={form.correct_answer}
-                  onChange={(e) => setForm({ ...form, correct_answer: e.target.value })} />
-              </label>
-              <label>
-                Marks
-                <input type="number" min={1} value={form.marks}
-                  onChange={(e) => setForm({ ...form, marks: e.target.value })} />
-              </label>
-              <button type="submit" className="primary-button">
-                <Plus size={16} /> Add question
-              </button>
-            </form>
-          </section>
+              <form className="panel glass-panel form-panel" onSubmit={handleSubmit}>
+                <h2 className="panel-title">Add a question</h2>
+                <label>
+                  Question
+                  <textarea required rows={3} value={form.question_text}
+                    onChange={(e) => setForm({ ...form, question_text: e.target.value })} />
+                </label>
+                <label>
+                  Correct answer
+                  <input required value={form.correct_answer}
+                    onChange={(e) => setForm({ ...form, correct_answer: e.target.value })} />
+                </label>
+                <label>
+                  Marks
+                  <input type="number" min={1} value={form.marks}
+                    onChange={(e) => setForm({ ...form, marks: e.target.value })} />
+                </label>
+                <button type="submit" className="primary-button">
+                  <Plus size={16} /> Add question
+                </button>
+              </form>
+            </section>
+          )}
         </>
       )}
     </>
