@@ -22,3 +22,19 @@ UNION ALL SELECT 'learning_record', COUNT(*) FROM learning_record
 UNION ALL SELECT 'topic_proficiency', COUNT(*) FROM topic_proficiency
 UNION ALL SELECT 'recommendation', COUNT(*) FROM recommendation
 ORDER BY table_name;
+
+-- Business logic objects (after business_logic.sql)
+SELECT routine_name AS function_name
+FROM information_schema.routines
+WHERE routine_schema = 'public'
+ORDER BY routine_name;
+
+SELECT trigger_name, event_object_table AS on_table
+FROM information_schema.triggers
+WHERE trigger_schema = 'public'
+ORDER BY trigger_name;
+
+SELECT table_name AS view_name
+FROM information_schema.views
+WHERE table_schema = 'public'
+ORDER BY table_name;

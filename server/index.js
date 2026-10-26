@@ -394,6 +394,8 @@ app.use((error, _req, res, _next) => {
     "23503": [409, "Blocked by a related record (foreign key constraint)."],
     "23502": [400, "A required field is missing (not-null constraint)."],
     "23514": [400, "A value is outside the allowed range (check constraint)."],
+    // Raised by business-logic triggers; their message is meant for the user.
+    "23001": [409, error.message],
   };
   const mapped = messages[error.code];
   if (mapped) {
