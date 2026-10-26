@@ -11,7 +11,8 @@
     "db:schema": "node --env-file-if-exists=.env.local server/setup-db.js --schema-only",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --env-file-if-exists=.env.local --test \"test/*.test.js\""
   },
   "dependencies": {
     "cors": "^2.8.6",
