@@ -33,10 +33,12 @@ export const api = {
 
   getTopics: () => request("/topics"),
   addTopic: (topic) => request("/topics", { method: "POST", body: topic }),
+  updateTopic: (id, topic) => request(`/topics/${id}`, { method: "PUT", body: topic }),
   deleteTopic: (id) => request(`/topics/${id}`, { method: "DELETE" }),
 
   getItems: (type) => request(`/items${type ? `?type=${type}` : ""}`),
   addItem: (item) => request("/items", { method: "POST", body: item }),
+  updateItem: (id, item) => request(`/items/${id}`, { method: "PUT", body: item }),
   deleteItem: (id) => request(`/items/${id}`, { method: "DELETE" }),
 
   getQuestions: (quizId) => request(`/quizzes/${quizId}/questions`),
@@ -45,6 +47,18 @@ export const api = {
       method: "POST",
       body: question,
     }),
+
+  updateQuestion: (quizId, questionNo, question) =>
+    request(`/quizzes/${quizId}/questions/${questionNo}`, {
+      method: "PUT",
+      body: question,
+    }),
+  deleteQuestion: (quizId, questionNo) =>
+    request(`/quizzes/${quizId}/questions/${questionNo}`, { method: "DELETE" }),
+
+  updateUser: (userId, profile) =>
+    request(`/users/${userId}`, { method: "PUT", body: profile }),
+  deleteUser: (userId) => request(`/users/${userId}`, { method: "DELETE" }),
 
   getQuizPaper: (quizId) => request(`/quizzes/${quizId}/paper`),
   submitQuiz: (quizId, userId, answers) =>
