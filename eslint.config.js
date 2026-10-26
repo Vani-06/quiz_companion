@@ -19,7 +19,7 @@ export default defineConfig([
     },
   },
   {
-    files: ['server/**/*.js'],
+    files: ['server/**/*.js', 'test/**/*.js'],
     languageOptions: { globals: globals.node },
     rules: {
       'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],

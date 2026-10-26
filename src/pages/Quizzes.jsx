@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Brain, ListChecks, PenLine, Plus } from "lucide-react";
+import { Brain, ListChecks, PenLine, Pencil, Plus, Save, Trash2, X } from "lucide-react";
 import { api } from "../services/api";
 import { EmptyState, ErrorBanner, PageHeader } from "../components/common";
 import TakeQuiz from "./TakeQuiz";
@@ -12,6 +12,7 @@ export default function Quizzes({ userId }) {
   const [selectedId, setSelectedId] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [form, setForm] = useState(EMPTY_QUESTION);
+  const [editingNo, setEditingNo] = useState(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -46,8 +47,43 @@ export default function Quizzes({ userId }) {
     event.preventDefault();
     try {
       setError("");
-      await api.addQuestion(selectedId, form);
-      setForm(EMPTY_QUESTION);
+      if (editingNo) {
+        await api.updateQuestion(selectedId, editingNo, form);
+      } else {
+        await api.addQuestion(selectedId, form);
+      }
+      cancelEdit();
+      await loadQuestions(selectedId);
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  function startEdit(question) {
+    setEditingNo(question.question_no);
+    setForm({
+      question_text: question.question_text,
+      correct_answer: question.correct_answer,
+      marks: question.marks,
+    });
+  }
+
+  function cancelEdit() {
+    setEditingNo(null);
+    setForm(EMPTY_QUESTION);
+  }
+
+  function selectQuiz(quizId) {
+    cancelEdit();
+    setSelectedId(quizId);
+  }
+
+  async function handleDelete(question) {
+    if (!window.confirm(`Delete question ${question.question_no}?`)) return;
+    try {
+      setError("");
+      await api.deleteQuestion(selectedId, question.question_no);
+      if (editingNo === question.question_no) cancelEdit();
       await loadQuestions(selectedId);
     } catch (err) {
       setError(err.message);
@@ -89,7 +125,7 @@ export default function Quizzes({ userId }) {
               <button key={row.item_id} type="button"
                 className={`category-filter ${row.item_id === selectedId ? "active" : ""}`}
                 aria-pressed={row.item_id === selectedId}
-                onClick={() => setSelectedId(row.item_id)}>
+                onClick={() => selectQuiz(row.item_id)}>
                 {row.title}
               </button>
             ))}
@@ -113,7 +149,19 @@ export default function Quizzes({ userId }) {
                       <li key={q.question_no}>
                         <div className="question-head">
                           <strong>Q{q.question_no}. {q.question_text}</strong>
-                          <span className="tag">{q.marks} marks</span>
+                          <div className="row-actions">
+                            <span className="tag">{q.marks} marks</span>
+                            <button type="button" className="icon-button"
+                              aria-label={`Edit question ${q.question_no}`}
+                              onClick={() => startEdit(q)}>
+                              <Pencil size={14} />
+                            </button>
+                            <button type="button" className="icon-button"
+                              aria-label={`Delete question ${q.question_no}`}
+                              onClick={() => handleDelete(q)}>
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
                         </div>
                         <div className="cell-note">Answer: {q.correct_answer}</div>
                       </li>
@@ -123,7 +171,9 @@ export default function Quizzes({ userId }) {
               </div>
 
               <form className="panel glass-panel form-panel" onSubmit={handleSubmit}>
-                <h2 className="panel-title">Add a question</h2>
+                <h2 className="panel-title">
+                  {editingNo ? `Edit question ${editingNo}` : "Add a question"}
+                </h2>
                 <label>
                   Question
                   <textarea required rows={3} value={form.question_text}
@@ -139,9 +189,18 @@ export default function Quizzes({ userId }) {
                   <input type="number" min={1} value={form.marks}
                     onChange={(e) => setForm({ ...form, marks: e.target.value })} />
                 </label>
-                <button type="submit" className="primary-button">
-                  <Plus size={16} /> Add question
-                </button>
+                <div className="form-actions">
+                  <button type="submit" className="primary-button">
+                    {editingNo
+                      ? <><Save size={16} /> Save changes</>
+                      : <><Plus size={16} /> Add question</>}
+                  </button>
+                  {editingNo && (
+                    <button type="button" className="mini-button" onClick={cancelEdit}>
+                      <X size={13} /> Cancel
+                    </button>
+                  )}
+                </div>
               </form>
             </section>
           )}

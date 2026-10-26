@@ -2,7 +2,9 @@ import express from "express";
 import cors from "cors";
 import { pool, query } from "./db.js";
 import { badRequest, errorHandler, route, toId } from "./http.js";
+import { parseItem, parseProjectDetails, parseQuestion, parseQuizDetails, parseTopic } from "./inputs.js";
 import { authRouter } from "./routes/auth.js";
+import { crudRouter } from "./routes/crud.js";
 import { learningRouter } from "./routes/learning.js";
 
 export const app = express();
@@ -131,18 +133,12 @@ app.get(
 app.post(
   "/api/topics",
   route(async (req, res) => {
-    const name = String(req.body.name ?? "").trim();
-    const description = String(req.body.description ?? "").trim() || null;
-    const parentId = req.body.parent_topic_id
-      ? toId(req.body.parent_topic_id)
-      : null;
-
-    if (!name) return badRequest(res, "Topic name is required");
+    const topic = parseTopic(req.body);
 
     const { rows } = await query(
       `INSERT INTO topic (name, description, parent_topic_id)
        VALUES ($1, $2, $3) RETURNING *`,
-      [name, description, parentId]
+      [topic.name, topic.description, topic.parent_topic_id]
     );
     res.status(201).json(rows[0]);
   })
@@ -194,46 +190,35 @@ app.get(
 app.post(
   "/api/items",
   route(async (req, res) => {
-    const { title, topic_id, difficulty, item_type } = req.body;
-    const type = String(item_type ?? "").toUpperCase();
-    const cleanTitle = String(title ?? "").trim();
-
-    if (!cleanTitle) return badRequest(res, "Title is required");
-    if (!["QUIZ", "PROJECT"].includes(type)) {
-      return badRequest(res, "item_type must be QUIZ or PROJECT");
-    }
+    const item = parseItem(req.body, { creating: true });
+    const details =
+      item.item_type === "QUIZ" ? parseQuizDetails(req.body) : parseProjectDetails(req.body);
 
     const client = await pool.connect();
     try {
       await client.query("BEGIN");
 
-      const item = await client.query(
+      const created = await client.query(
         `INSERT INTO learning_item
            (topic_id, title, difficulty, item_type, created_at)
-         VALUES ($1, $2, $3, $4, NOW()) RETURNING *`,
-        [toId(topic_id), cleanTitle, Number(difficulty) || null, type]
+         VALUES ($1, $2, $3, $4, LOCALTIMESTAMP) RETURNING *`,
+        [item.topic_id, item.title, item.difficulty, item.item_type]
       );
-      const itemId = item.rows[0].item_id;
+      const itemId = created.rows[0].item_id;
 
-      if (type === "QUIZ") {
+      if (item.item_type === "QUIZ") {
         await client.query(
           `INSERT INTO quiz (item_id, time_limit_min, pass_mark)
            VALUES ($1, $2, $3)`,
-          [itemId, Number(req.body.time_limit_min) || null,
-           Number(req.body.pass_mark) || null]
+          [itemId, details.time_limit_min, details.pass_mark]
         );
       } else {
         await client.query(
           `INSERT INTO project (item_id, est_hours, repo_url)
            VALUES ($1, $2, $3)`,
-          [itemId, Number(req.body.est_hours) || null,
-           String(req.body.repo_url ?? "").trim() || null]
+          [itemId, details.est_hours, details.repo_url]
         );
-        const tech = String(req.body.tech ?? "")
-          .split(",")
-          .map((entry) => entry.trim())
-          .filter(Boolean);
-        for (const entry of new Set(tech)) {
+        for (const entry of details.tech) {
           await client.query(
             "INSERT INTO project_tech (item_id, tech) VALUES ($1, $2)",
             [itemId, entry]
@@ -242,7 +227,7 @@ app.post(
       }
 
       await client.query("COMMIT");
-      res.status(201).json(item.rows[0]);
+      res.status(201).json(created.rows[0]);
     } catch (error) {
       await client.query("ROLLBACK");
       throw error;
@@ -308,11 +293,7 @@ app.post(
     const id = toId(req.params.id);
     if (!id) return badRequest(res, "Invalid quiz id");
 
-    const text = String(req.body.question_text ?? "").trim();
-    const answer = String(req.body.correct_answer ?? "").trim();
-    if (!text || !answer) {
-      return badRequest(res, "Question text and correct answer are required");
-    }
+    const question = parseQuestion(req.body);
 
     const { rows } = await query(
       `INSERT INTO question
@@ -322,7 +303,7 @@ app.post(
                 FROM question WHERE quiz_id = $1),
                $2, $3, $4)
        RETURNING *`,
-      [id, text, answer, Number(req.body.marks) || 1]
+      [id, question.question_text, question.correct_answer, question.marks]
     );
     res.status(201).json(rows[0]);
   })
@@ -381,6 +362,7 @@ app.patch(
 
 app.use("/api", learningRouter);
 app.use("/api", authRouter);
+app.use("/api", crudRouter);
 
 // --------------------------------------------------------------- errors -----
 

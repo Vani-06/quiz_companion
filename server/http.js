@@ -14,6 +14,13 @@ export const badRequest = (res, message) =>
 
 // Maps PostgreSQL error codes to readable API errors.
 export function errorHandler(error, _req, res, _next) {
+  // Validation failures and malformed JSON bodies.
+  if (error.status === 400) {
+    return res.status(400).json({
+      error: error.type === "entity.parse.failed" ? "Request body is not valid JSON" : error.message,
+    });
+  }
+
   const messages = {
     "23505": [409, "That value already exists (unique constraint)."],
     "23503": [409, "Blocked by a related record (foreign key constraint)."],

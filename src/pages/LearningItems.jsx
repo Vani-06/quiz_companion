@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { BookOpen, Brain, Code2, Plus, Trash2 } from "lucide-react";
+import { BookOpen, Brain, Code2, Pencil, Plus, Save, Trash2, X } from "lucide-react";
 import { api } from "../services/api";
 import { EmptyState, ErrorBanner, PageHeader } from "../components/common";
 
@@ -20,6 +20,7 @@ export default function LearningItems() {
   const [topics, setTopics] = useState([]);
   const [filter, setFilter] = useState("ALL");
   const [search, setSearch] = useState("");
+  const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState("");
 
@@ -50,12 +51,36 @@ export default function LearningItems() {
     event.preventDefault();
     try {
       setError("");
-      await api.addItem(form);
-      setForm({ ...EMPTY_FORM, item_type: form.item_type });
+      if (editingId) {
+        await api.updateItem(editingId, form);
+      } else {
+        await api.addItem(form);
+      }
+      cancelEdit();
       await load();
     } catch (err) {
       setError(err.message);
     }
+  }
+
+  function startEdit(item) {
+    setEditingId(item.item_id);
+    setForm({
+      item_type: item.item_type,
+      title: item.title,
+      topic_id: item.topic_id ?? "",
+      difficulty: item.difficulty ?? "",
+      time_limit_min: item.time_limit_min ?? "",
+      pass_mark: item.pass_mark ?? "",
+      est_hours: item.est_hours ?? "",
+      repo_url: item.repo_url ?? "",
+      tech: item.tech.join(", "),
+    });
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setForm(EMPTY_FORM);
   }
 
   async function handleDelete(item) {
@@ -107,10 +132,16 @@ export default function LearningItems() {
                       {item.item_type === "QUIZ" ? <Brain size={13} /> : <Code2 size={13} />}
                       {item.item_type}
                     </span>
-                    <button type="button" className="icon-button"
-                      aria-label={`Delete ${item.title}`} onClick={() => handleDelete(item)}>
-                      <Trash2 size={15} />
-                    </button>
+                    <div className="row-actions">
+                      <button type="button" className="icon-button"
+                        aria-label={`Edit ${item.title}`} onClick={() => startEdit(item)}>
+                        <Pencil size={15} />
+                      </button>
+                      <button type="button" className="icon-button"
+                        aria-label={`Delete ${item.title}`} onClick={() => handleDelete(item)}>
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
                   </div>
                   <h3>{item.title}</h3>
                   <p className="item-meta">{item.topic ?? "No topic"} · difficulty {item.difficulty}/5</p>
@@ -133,10 +164,10 @@ export default function LearningItems() {
         </div>
 
         <form className="panel glass-panel form-panel" onSubmit={handleSubmit}>
-          <h2 className="panel-title">Add a learning item</h2>
+          <h2 className="panel-title">{editingId ? "Edit learning item" : "Add a learning item"}</h2>
           <label>
             Type
-            <select value={form.item_type} onChange={set("item_type")}>
+            <select value={form.item_type} onChange={set("item_type")} disabled={Boolean(editingId)}>
               <option value="QUIZ">Quiz</option>
               <option value="PROJECT">Project</option>
             </select>
@@ -187,9 +218,16 @@ export default function LearningItems() {
             </>
           )}
 
-          <button type="submit" className="primary-button">
-            <Plus size={16} /> Add item
-          </button>
+          <div className="form-actions">
+            <button type="submit" className="primary-button">
+              {editingId ? <><Save size={16} /> Save changes</> : <><Plus size={16} /> Add item</>}
+            </button>
+            {editingId && (
+              <button type="button" className="mini-button" onClick={cancelEdit}>
+                <X size={13} /> Cancel
+              </button>
+            )}
+          </div>
         </form>
       </section>
     </>
