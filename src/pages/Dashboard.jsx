@@ -52,6 +52,7 @@ function StatCard({ label, value, note, index }) {
 export default function Dashboard({ userId, onNavigate }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -66,6 +67,21 @@ export default function Dashboard({ userId, onNavigate }) {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
   }, [load]);
+
+  async function refreshRecommendations() {
+    try {
+      setError("");
+      const { added } = await api.generateRecommendations(userId);
+      setNotice(
+        added > 0
+          ? `Added ${added} new recommendation${added === 1 ? "" : "s"} for your weak topics.`
+          : "No new recommendations: no weak topics without suggestions."
+      );
+      await load();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
 
   async function changeStatus(itemId, status) {
     try {
@@ -184,7 +200,9 @@ export default function Dashboard({ userId, onNavigate }) {
 
       <section className="panel glass-panel recommendations-panel">
         <SectionHeading title="Recommended for you"
-          subtitle="Suggested quizzes and projects, highest rank first" />
+          subtitle="Suggested quizzes and projects, highest rank first"
+          action="Refresh for weak topics" onAction={refreshRecommendations} />
+        {notice && <div className="notice-banner">{notice}</div>}
         <div className="matches-list">
           {recommendations.length === 0 ? (
             <EmptyState title="No recommendations" />
