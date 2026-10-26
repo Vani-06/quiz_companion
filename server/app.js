@@ -2,6 +2,8 @@ import express from "express";
 import cors from "cors";
 import { pool, query } from "./db.js";
 import { badRequest, errorHandler, route, toId } from "./http.js";
+import { authRouter } from "./routes/auth.js";
+import { learningRouter } from "./routes/learning.js";
 
 export const app = express();
 
@@ -374,6 +376,11 @@ app.patch(
     res.json(rows[0]);
   })
 );
+
+// --------------------------------------------------- learning flow, auth ----
+
+app.use("/api", learningRouter);
+app.use("/api", authRouter);
 
 // --------------------------------------------------------------- errors -----
 
