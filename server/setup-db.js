@@ -1,6 +1,7 @@
 // Runs the Phase 2 SQL scripts against DATABASE_URL.
-//   npm run db:setup   -> schema.sql + seed.sql, then prints verify.sql output
-//   npm run db:schema  -> schema.sql only (empty tables)
+//   npm run db:setup   -> schema.sql + seed.sql + business_logic.sql, then verification output
+//   npm run db:schema  -> schema.sql + business_logic.sql (empty tables)
+// business_logic.sql runs after the seed so its trigger does not rewrite seeded proficiency rows.
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { pool } from "./db.js";
@@ -19,6 +20,7 @@ async function run(name) {
 try {
   await run("schema.sql");
   if (!schemaOnly) await run("seed.sql");
+  await run("business_logic.sql");
 
   const tables = await pool.query(
     `SELECT table_name FROM information_schema.tables
