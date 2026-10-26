@@ -130,6 +130,19 @@ function App() {
     setUserId(user.user_id);
   };
 
+  const handleUserUpdated = (user) => {
+    setUsers((current) =>
+      current.map((row) => (row.user_id === user.user_id ? { ...row, ...user } : row))
+    );
+  };
+
+  const handleUserDeleted = (deletedId) => {
+    const remaining = users.filter((row) => row.user_id !== deletedId);
+    setUsers(remaining);
+    setUserId(remaining[0]?.user_id ?? null);
+    handleNavigation("Dashboard");
+  };
+
   return (
     <div className="app-shell">
       {showMobileNav && (
@@ -229,7 +242,15 @@ function App() {
           {activeNav === "Leaderboard" && <Leaderboard userId={userId} />}
           {activeNav === "Learning Items" && <LearningItems />}
           {activeNav === "Topics" && <Topics />}
-          {activeNav === "Account" && <Account onSignIn={handleSignIn} />}
+          {activeNav === "Account" && (
+            <Account
+              key={userId}
+              currentUser={currentUser}
+              onSignIn={handleSignIn}
+              onUserUpdated={handleUserUpdated}
+              onUserDeleted={handleUserDeleted}
+            />
+          )}
         </div>
       </main>
     </div>
