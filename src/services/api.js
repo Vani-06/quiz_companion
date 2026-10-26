@@ -46,6 +46,27 @@ export const api = {
       body: question,
     }),
 
+  getQuizPaper: (quizId) => request(`/quizzes/${quizId}/paper`),
+  submitQuiz: (quizId, userId, answers) =>
+    request(`/quizzes/${quizId}/attempts`, {
+      method: "POST",
+      body: { userId, answers },
+    }),
+  submitProject: (projectId, userId, score) =>
+    request(`/projects/${projectId}/submissions`, {
+      method: "POST",
+      body: { userId, score },
+    }),
+  getStrengths: (userId) => request(`/users/${userId}/strengths`),
+  generateRecommendations: (userId) =>
+    request(`/users/${userId}/recommendations/generate`, { method: "POST" }),
+  getLeaderboard: () => request("/leaderboard"),
+
+  register: (account) =>
+    request("/auth/register", { method: "POST", body: account }),
+  login: (credentials) =>
+    request("/auth/login", { method: "POST", body: credentials }),
+
   setRecommendationStatus: (userId, itemId, status) =>
     request(`/recommendations/${userId}/${itemId}`, {
       method: "PATCH",

@@ -8,6 +8,8 @@ import {
   LayoutDashboard,
   Library,
   Menu,
+  Trophy,
+  UserRound,
   Zap,
   X,
 } from "lucide-react";
@@ -17,6 +19,8 @@ import Topics from "./pages/Topics";
 import LearningItems from "./pages/LearningItems";
 import Quizzes from "./pages/Quizzes";
 import MyLearning from "./pages/MyLearning";
+import Leaderboard from "./pages/Leaderboard";
+import Account from "./pages/Account";
 import "./App.css";
 import "./pages.css";
 
@@ -24,8 +28,10 @@ const navigation = [
   { label: "Dashboard", icon: LayoutDashboard },
   { label: "My Learning", icon: BookOpen },
   { label: "Quizzes", icon: Brain },
+  { label: "Leaderboard", icon: Trophy },
   { label: "Learning Items", icon: Library },
   { label: "Topics", icon: FolderTree },
+  { label: "Account", icon: UserRound },
 ];
 
 const pageFromHash = () => {
@@ -64,6 +70,13 @@ function App() {
         )
       )
       .finally(() => setLoading(false));
+  }, []);
+
+  // Keeps the page in sync with the URL hash (back/forward and shared links).
+  useEffect(() => {
+    const syncPage = () => setActiveNav(pageFromHash());
+    window.addEventListener("hashchange", syncPage);
+    return () => window.removeEventListener("hashchange", syncPage);
   }, []);
 
   const handleNavigation = (label) => {
@@ -106,6 +119,16 @@ function App() {
   }
 
   const currentUser = users.find((user) => user.user_id === userId);
+
+  // A newly registered student is added to the switcher and becomes the current user.
+  const handleSignIn = (user) => {
+    setUsers((current) =>
+      current.some((row) => row.user_id === user.user_id)
+        ? current
+        : [...current, user]
+    );
+    setUserId(user.user_id);
+  };
 
   return (
     <div className="app-shell">
@@ -199,12 +222,14 @@ function App() {
 
         <div className="dashboard-content">
           {activeNav === "Dashboard" && (
-            <Dashboard userId={userId} onNavigate={handleNavigation} />
+            <Dashboard key={userId} userId={userId} onNavigate={handleNavigation} />
           )}
           {activeNav === "My Learning" && <MyLearning userId={userId} />}
-          {activeNav === "Quizzes" && <Quizzes />}
+          {activeNav === "Quizzes" && <Quizzes userId={userId} />}
+          {activeNav === "Leaderboard" && <Leaderboard userId={userId} />}
           {activeNav === "Learning Items" && <LearningItems />}
           {activeNav === "Topics" && <Topics />}
+          {activeNav === "Account" && <Account onSignIn={handleSignIn} />}
         </div>
       </main>
     </div>
