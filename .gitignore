@@ -25,3 +25,6 @@ dist-ssr
 
 # JDBC driver (downloaded locally)
 *.jar
+
+# Local settings with passwords (copy .env.example to .env)
+.env
