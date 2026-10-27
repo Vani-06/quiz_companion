@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import { pool, query } from "./db.js";
+import { refreshInBackground } from "./embeddings.js";
 import { badRequest, errorHandler, route, toId } from "./http.js";
 import { parseItem, parseProjectDetails, parseQuestion, parseQuizDetails, parseTopic } from "./inputs.js";
 import { authRouter } from "./routes/auth.js";
@@ -228,6 +229,7 @@ app.post(
 
       await client.query("COMMIT");
       res.status(201).json(created.rows[0]);
+      refreshInBackground(itemId);
     } catch (error) {
       await client.query("ROLLBACK");
       throw error;
@@ -306,6 +308,7 @@ app.post(
       [id, question.question_text, question.correct_answer, question.marks]
     );
     res.status(201).json(rows[0]);
+    refreshInBackground(id);
   })
 );
 
