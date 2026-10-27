@@ -24,10 +24,14 @@ UNION ALL SELECT 'recommendation', COUNT(*) FROM recommendation
 ORDER BY table_name;
 
 -- Business logic objects (after business_logic.sql)
-SELECT routine_name AS function_name
-FROM information_schema.routines
-WHERE routine_schema = 'public'
-ORDER BY routine_name;
+-- Project functions only: functions installed by extensions such as pgvector are skipped.
+SELECT p.proname AS function_name
+FROM pg_proc p
+JOIN pg_namespace n ON n.oid = p.pronamespace
+WHERE n.nspname = 'public'
+  AND NOT EXISTS (SELECT 1 FROM pg_depend d
+                  WHERE d.objid = p.oid AND d.deptype = 'e')
+ORDER BY p.proname;
 
 SELECT trigger_name, event_object_table AS on_table
 FROM information_schema.triggers
