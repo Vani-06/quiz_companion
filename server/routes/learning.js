@@ -2,6 +2,7 @@
 // recommendations and the leaderboard. Rules live in db/business_logic.sql.
 import { Router } from "express";
 import { pool, query } from "../db.js";
+import { vectorsAvailable } from "../embeddings.js";
 import { badRequest, route, toId } from "../http.js";
 
 export const learningRouter = Router();
@@ -135,11 +136,21 @@ learningRouter.post(
     const userId = toId(req.params.id);
     if (!userId) return badRequest(res, "Invalid user id");
 
-    const { rows } = await query(
-      "SELECT generate_recommendations($1) AS added",
-      [userId]
-    );
-    res.json({ added: rows[0].added });
+    // Rule-based: items from weak topics.
+    const weak = await query("SELECT generate_recommendations($1) AS added", [userId]);
+
+    // Vector-based: unseen items similar to what the student found hard (pgvector).
+    let similar = 0;
+    if (await vectorsAvailable()) {
+      const { rows } = await query(
+        "SELECT generate_similar_recommendations($1) AS added",
+        [userId]
+      );
+      similar = rows[0].added;
+    }
+
+    const weakTopic = weak.rows[0].added;
+    res.json({ added: weakTopic + similar, weakTopic, similar });
   })
 );
 
