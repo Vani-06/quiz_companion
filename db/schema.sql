@@ -2,6 +2,7 @@
 -- 10 tables, 12 foreign keys, consistent with the Phase 1 relational schema (3NF).
 -- Re-running this script drops and recreates every table.
 
+DROP TABLE IF EXISTS item_embedding      CASCADE;  -- created by vectors.sql
 DROP TABLE IF EXISTS recommendation      CASCADE;
 DROP TABLE IF EXISTS topic_proficiency   CASCADE;
 DROP TABLE IF EXISTS learning_record     CASCADE;
