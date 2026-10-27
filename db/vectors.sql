@@ -47,10 +47,13 @@ $$ LANGUAGE sql STABLE;
 
 -- Similar-item recommendations -----------------------------------------------
 -- Recommends up to p_limit items the student has never attempted, closest to
--- their profile. rank_score is the cosine similarity (0-1). The reason names the
--- nearest item they scored below 70 on. Returns the number of rows added.
+-- their profile and at least p_min_similarity alike (cosine; below about 0.35
+-- MiniLM pairs are unrelated subjects). rank_score is the cosine similarity.
+-- The reason names the nearest item they scored below 70 on. Returns rows added.
 
-CREATE OR REPLACE FUNCTION generate_similar_recommendations(p_user INT, p_limit INT DEFAULT 3)
+DROP FUNCTION IF EXISTS generate_similar_recommendations(INT, INT);
+CREATE OR REPLACE FUNCTION generate_similar_recommendations(
+  p_user INT, p_limit INT DEFAULT 3, p_min_similarity NUMERIC DEFAULT 0.35)
 RETURNS INTEGER AS $$
 DECLARE
   v_profile vector;
@@ -81,7 +84,8 @@ BEGIN
     ORDER BY e2.embedding <=> e.embedding
     LIMIT 1
   ) near ON TRUE
-  WHERE NOT EXISTS (SELECT 1 FROM learning_record lr
+  WHERE 1 - (e.embedding <=> v_profile) >= p_min_similarity
+    AND NOT EXISTS (SELECT 1 FROM learning_record lr
                     WHERE lr.user_id = p_user AND lr.item_id = e.item_id)
     AND NOT EXISTS (SELECT 1 FROM recommendation r
                     WHERE r.user_id = p_user AND r.item_id = e.item_id)
