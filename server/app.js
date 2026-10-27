@@ -76,7 +76,12 @@ app.get(
       query(
         `SELECT r.item_id, li.title, li.item_type, li.difficulty,
                 t.name AS topic, r.rank_score::float AS rank_score,
-                r.reason, r.status, r.created_at
+                r.reason, r.status, r.created_at,
+                -- Reasons written by generate_similar_recommendations() in vectors.sql
+                CASE WHEN r.reason LIKE 'Similar to %'
+                       OR r.reason LIKE 'Builds on %'
+                       OR r.reason = 'Matches your learning history'
+                     THEN 'similar' ELSE 'topic' END AS source
          FROM recommendation r
          JOIN learning_item li ON li.item_id = r.item_id
          LEFT JOIN topic t ON t.topic_id = li.topic_id
