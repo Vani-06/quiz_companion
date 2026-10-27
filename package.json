@@ -13,7 +13,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "node --env-file-if-exists=.env.local --test \"test/*.test.js\""
+    "test": "node --env-file-if-exists=.env.local --test --test-concurrency=1 \"test/*.test.js\""
   },
   "dependencies": {
     "@huggingface/transformers": "^4.3.1",
