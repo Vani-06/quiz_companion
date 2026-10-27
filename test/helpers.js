@@ -9,6 +9,8 @@ if (!process.env.TEST_DATABASE_URL) {
   );
 }
 process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
+// Keep the API from loading the embedding model during tests.
+process.env.EMBEDDINGS_DISABLED = "1";
 
 const { app } = await import("../server/app.js");
 const { pool } = await import("../server/db.js");
