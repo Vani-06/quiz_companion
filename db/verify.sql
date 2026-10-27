@@ -38,3 +38,8 @@ SELECT table_name AS view_name
 FROM information_schema.views
 WHERE table_schema = 'public'
 ORDER BY table_name;
+
+SELECT indexname AS index_name, tablename AS on_table
+FROM pg_indexes
+WHERE schemaname = 'public' AND indexname LIKE 'idx_%'
+ORDER BY indexname;

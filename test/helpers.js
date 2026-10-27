@@ -14,7 +14,7 @@ const { app } = await import("../server/app.js");
 const { pool } = await import("../server/db.js");
 
 const scripts = await Promise.all(
-  ["schema.sql", "seed.sql", "business_logic.sql"].map((name) =>
+  ["schema.sql", "seed.sql", "business_logic.sql", "indexes.sql"].map((name) =>
     readFile(fileURLToPath(new URL(`../db/${name}`, import.meta.url)), "utf8")
   )
 );
