@@ -49,7 +49,8 @@ $$ LANGUAGE sql STABLE;
 -- Recommends up to p_limit items the student has never attempted, closest to
 -- their profile and at least p_min_similarity alike (cosine; below about 0.35
 -- MiniLM pairs are unrelated subjects). rank_score is the cosine similarity.
--- The reason names the nearest item they scored below 70 on. Returns rows added.
+-- The reason names the nearest item in their history and whether they found it
+-- hard (below 70) or passed it. Returns rows added.
 
 DROP FUNCTION IF EXISTS generate_similar_recommendations(INT, INT);
 CREATE OR REPLACE FUNCTION generate_similar_recommendations(
@@ -68,19 +69,22 @@ BEGIN
     (user_id, item_id, rank_score, reason, status, created_at)
   SELECT p_user, e.item_id,
          ROUND(GREATEST(0, 1 - (e.embedding <=> v_profile))::numeric, 4),
-         LEFT(COALESCE('Similar to ' || near.title || ', which you found hard',
-                       'Matches your learning history'), 200),
+         LEFT(CASE
+                WHEN near.title IS NULL THEN 'Matches your learning history'
+                WHEN near.best_score < 70 THEN 'Similar to ' || near.title || ', which you found hard'
+                ELSE 'Builds on ' || near.title || ', which you passed'
+              END, 200),
          'active', LOCALTIMESTAMP
   FROM item_embedding e
   LEFT JOIN LATERAL (
-    SELECT li.title
-    FROM (SELECT item_id
+    -- The scored item in the student's history closest to this candidate.
+    SELECT li.title, history.best_score
+    FROM (SELECT item_id, MAX(score) AS best_score
           FROM learning_record
-          WHERE user_id = p_user
-          GROUP BY item_id
-          HAVING MAX(score) < 70) struggled
-    JOIN item_embedding e2 ON e2.item_id = struggled.item_id
-    JOIN learning_item li ON li.item_id = struggled.item_id
+          WHERE user_id = p_user AND score IS NOT NULL
+          GROUP BY item_id) history
+    JOIN item_embedding e2 ON e2.item_id = history.item_id
+    JOIN learning_item li ON li.item_id = history.item_id
     ORDER BY e2.embedding <=> e.embedding
     LIMIT 1
   ) near ON TRUE
