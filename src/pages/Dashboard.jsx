@@ -75,7 +75,7 @@ export default function Dashboard({ userId, onNavigate }) {
       setNotice(
         added > 0
           ? `Added ${added} new recommendation${added === 1 ? "" : "s"}: ` +
-              `${weakTopic} from weak topics, ${similar} similar to items you found hard.`
+              `${weakTopic} from weak topics, ${similar} similar to your past attempts.`
           : "No new recommendations right now."
       );
       await load();
