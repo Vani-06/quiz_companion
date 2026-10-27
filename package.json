@@ -9,6 +9,7 @@
     "dev:all": "concurrently -n api,web -c cyan,magenta \"npm:server\" \"npm:dev\"",
     "db:setup": "node --env-file-if-exists=.env.local server/setup-db.js",
     "db:schema": "node --env-file-if-exists=.env.local server/setup-db.js --schema-only",
+    "db:embed": "node --env-file-if-exists=.env.local server/embed-items.js",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
