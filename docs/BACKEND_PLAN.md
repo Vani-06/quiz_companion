@@ -30,7 +30,9 @@ This was the most important package because everything else calls it.
 - SQL checks for each rule in `db/business_logic_tests.sql`
 - Trigger errors returned to the API as readable 409 messages
 
-**Next for this role:** indexes for the common lookups (`learning_record(user_id)`, `learning_item(topic_id)`), and the Phase 3 report's schema section.
+- Indexes on the foreign keys that are searched or checked on delete, in `db/indexes.sql` (follow-up in `feat/db-indexes`)
+
+**Next for this role:** the Phase 3 report's schema section.
 
 ### Person 2: Front-End and Business Logic Developer (done in `feat/learning-flow-api`)
 
