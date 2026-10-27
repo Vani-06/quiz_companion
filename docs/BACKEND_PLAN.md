@@ -69,6 +69,15 @@ Files: `server/routes/crud.js`, `server/validation.js`, `server/inputs.js`, `jdb
 3. `feat/crud-and-tests` merged into `dev`.
 4. Next: merge `dev` into `main` for the Phase 3 submission.
 
+## Vector recommendations (`feat/vector-recommendations`)
+
+Similar-item recommendations use pgvector inside PostgreSQL instead of the separate Qdrant service planned on deck slide 27. Keeping vectors in the same database lets one SQL query join embeddings with attempts and recommendations, and the JDBC client can call the same functions.
+
+- `db/vectors.sql`: `item_embedding` table with an HNSW index, `student_profile()` and `generate_similar_recommendations()`
+- `server/embeddings.js`: local `all-MiniLM-L6-v2` embeddings, refreshed when items or questions change
+- `db/seed_more.sql`: 2 more students, 6 more topics, 13 more items with questions and attempts, so the recommendations have something to work with
+- `test/vectors.test.js`: checks profile weighting, ranking and exclusions with hand-made vectors
+
 ## Optional, if time allows
 
-Redis caching for the leaderboard and Qdrant similarity search for recommendations (deck slide 27). Neither is required by the rubric.
+Redis caching for the leaderboard (deck slide 27). Not required by the rubric.

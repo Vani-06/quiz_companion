@@ -1,6 +1,7 @@
 // Update and delete operations that complete CRUD for every entity.
 import { Router } from "express";
 import { pool, query } from "../db.js";
+import { refreshInBackground } from "../embeddings.js";
 import { route } from "../http.js";
 import {
   parseItem,
@@ -95,6 +96,7 @@ crudRouter.put(
 
     if (!updated) return notFound(res, "Learning item");
     res.json(updated);
+    refreshInBackground(itemId);
   })
 );
 
@@ -116,6 +118,7 @@ crudRouter.put(
     );
     if (rows.length === 0) return notFound(res, "Question");
     res.json(rows[0]);
+    refreshInBackground(quizId);
   })
 );
 
@@ -133,6 +136,7 @@ crudRouter.delete(
     );
     if (result.rowCount === 0) return notFound(res, "Question");
     res.status(204).end();
+    refreshInBackground(quizId);
   })
 );
 

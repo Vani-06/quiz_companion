@@ -441,3 +441,21 @@ option {
     grid-template-columns: 1fr;
   }
 }
+
+/* Recommendation source badge */
+
+.rec-source {
+  display: inline-block;
+  padding: 1px 7px;
+  margin-right: 6px;
+  color: #b9afff;
+  font-size: 10px;
+  font-weight: 700;
+  background: rgba(139, 124, 255, 0.14);
+  border-radius: 20px;
+}
+
+.rec-source.similar {
+  color: #43e6c5;
+  background: rgba(67, 230, 197, 0.12);
+}

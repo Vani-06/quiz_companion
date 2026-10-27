@@ -1,7 +1,9 @@
 // Runs the Phase 2 SQL scripts against DATABASE_URL.
-//   npm run db:setup   -> schema.sql + seed.sql + business_logic.sql + indexes.sql, then verification output
+//   npm run db:setup   -> schema.sql + seed.sql + business_logic.sql + indexes.sql + seed_more.sql
+//                         + vectors.sql (when pgvector is installed), verification output, embeddings
 //   npm run db:schema  -> schema.sql + business_logic.sql + indexes.sql (empty tables)
-// business_logic.sql runs after the seed so its trigger does not rewrite seeded proficiency rows.
+// business_logic.sql runs after the seed so its trigger does not rewrite seeded proficiency rows,
+// and before seed_more.sql so the trigger fills proficiency from the extra attempts.
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { pool } from "./db.js";
@@ -22,6 +24,18 @@ try {
   if (!schemaOnly) await run("seed.sql");
   await run("business_logic.sql");
   await run("indexes.sql");
+  if (!schemaOnly) await run("seed_more.sql");
+
+  // Vector recommendations are optional: they need the pgvector extension.
+  let vectors = false;
+  try {
+    await run("vectors.sql");
+    vectors = true;
+  } catch (error) {
+    console.warn(
+      `skipped db/vectors.sql (${error.message}). Install pgvector to enable similar-item recommendations.`
+    );
+  }
 
   const tables = await pool.query(
     `SELECT table_name FROM information_schema.tables
@@ -46,6 +60,16 @@ try {
        ORDER BY table_name`
     );
     console.table(counts.rows);
+  }
+
+  if (vectors && !schemaOnly) {
+    try {
+      const { EMBEDDING_MODEL, refreshAllEmbeddings } = await import("./embeddings.js");
+      console.log(`\nEmbedding learning items with ${EMBEDDING_MODEL}...`);
+      console.log(`embedded ${await refreshAllEmbeddings()} learning items`);
+    } catch (error) {
+      console.warn(`embedding skipped (${error.message}). Run npm run db:embed later.`);
+    }
   }
 } catch (error) {
   console.error("Database setup failed:", error.message);

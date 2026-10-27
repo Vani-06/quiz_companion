@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import { pool, query } from "./db.js";
+import { refreshInBackground } from "./embeddings.js";
 import { badRequest, errorHandler, route, toId } from "./http.js";
 import { parseItem, parseProjectDetails, parseQuestion, parseQuizDetails, parseTopic } from "./inputs.js";
 import { authRouter } from "./routes/auth.js";
@@ -75,7 +76,12 @@ app.get(
       query(
         `SELECT r.item_id, li.title, li.item_type, li.difficulty,
                 t.name AS topic, r.rank_score::float AS rank_score,
-                r.reason, r.status, r.created_at
+                r.reason, r.status, r.created_at,
+                -- Reasons written by generate_similar_recommendations() in vectors.sql
+                CASE WHEN r.reason LIKE 'Similar to %'
+                       OR r.reason LIKE 'Builds on %'
+                       OR r.reason = 'Matches your learning history'
+                     THEN 'similar' ELSE 'topic' END AS source
          FROM recommendation r
          JOIN learning_item li ON li.item_id = r.item_id
          LEFT JOIN topic t ON t.topic_id = li.topic_id
@@ -228,6 +234,7 @@ app.post(
 
       await client.query("COMMIT");
       res.status(201).json(created.rows[0]);
+      refreshInBackground(itemId);
     } catch (error) {
       await client.query("ROLLBACK");
       throw error;
@@ -306,6 +313,7 @@ app.post(
       [id, question.question_text, question.correct_answer, question.marks]
     );
     res.status(201).json(rows[0]);
+    refreshInBackground(id);
   })
 );
 

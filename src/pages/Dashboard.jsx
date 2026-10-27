@@ -71,11 +71,12 @@ export default function Dashboard({ userId, onNavigate }) {
   async function refreshRecommendations() {
     try {
       setError("");
-      const { added } = await api.generateRecommendations(userId);
+      const { added, weakTopic, similar } = await api.generateRecommendations(userId);
       setNotice(
         added > 0
-          ? `Added ${added} new recommendation${added === 1 ? "" : "s"} for your weak topics.`
-          : "No new recommendations: no weak topics without suggestions."
+          ? `Added ${added} new recommendation${added === 1 ? "" : "s"}: ` +
+              `${weakTopic} from weak topics, ${similar} similar to items you found hard.`
+          : "No new recommendations right now."
       );
       await load();
     } catch (err) {
@@ -201,7 +202,7 @@ export default function Dashboard({ userId, onNavigate }) {
       <section className="panel glass-panel recommendations-panel">
         <SectionHeading title="Recommended for you"
           subtitle="Suggested quizzes and projects, highest rank first"
-          action="Refresh for weak topics" onAction={refreshRecommendations} />
+          action="Refresh recommendations" onAction={refreshRecommendations} />
         {notice && <div className="notice-banner">{notice}</div>}
         <div className="matches-list">
           {recommendations.length === 0 ? (
@@ -215,7 +216,12 @@ export default function Dashboard({ userId, onNavigate }) {
                 <div className="match-info">
                   <strong>{rec.title}</strong>
                   <span className="match-skill">{rec.topic} · difficulty {rec.difficulty}/5</span>
-                  <span className="rec-reason">{rec.reason}</span>
+                  <span className="rec-reason">
+                    <span className={`rec-source ${rec.source}`}>
+                      {rec.source === "similar" ? "Similar" : "Topic"}
+                    </span>
+                    {rec.reason}
+                  </span>
                 </div>
                 <div className="match-right rec-actions">
                   <div className="match-score">
