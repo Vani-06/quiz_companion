@@ -5,15 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "server": "node --env-file-if-exists=.env.local server/index.js",
+    "server": "node --env-file-if-exists=.env --env-file-if-exists=.env.local server/index.js",
     "dev:all": "concurrently -n api,web -c cyan,magenta \"npm:server\" \"npm:dev\"",
-    "db:setup": "node --env-file-if-exists=.env.local server/setup-db.js",
-    "db:schema": "node --env-file-if-exists=.env.local server/setup-db.js --schema-only",
-    "db:embed": "node --env-file-if-exists=.env.local server/embed-items.js",
+    "db:setup": "node --env-file-if-exists=.env --env-file-if-exists=.env.local server/setup-db.js",
+    "db:schema": "node --env-file-if-exists=.env --env-file-if-exists=.env.local server/setup-db.js --schema-only",
+    "db:embed": "node --env-file-if-exists=.env --env-file-if-exists=.env.local server/embed-items.js",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "node --env-file-if-exists=.env.local --test --test-concurrency=1 \"test/*.test.js\""
+    "test": "node --env-file-if-exists=.env --env-file-if-exists=.env.local --test --test-concurrency=1 \"test/*.test.js\""
   },
   "dependencies": {
     "@huggingface/transformers": "^4.3.1",
