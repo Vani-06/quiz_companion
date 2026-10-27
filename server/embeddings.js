@@ -37,6 +37,8 @@ export async function vectorsAvailable() {
 }
 
 // The text that represents an item: what it is, where it sits, what it asks.
+// Plain content only, no repeated labels, so items differ by subject rather than
+// sharing template words.
 export async function itemSourceText(itemId) {
   const { rows } = await query(
     `SELECT li.title, li.item_type, t.name AS topic, p.name AS parent_topic,
@@ -53,10 +55,10 @@ export async function itemSourceText(itemId) {
   if (rows.length === 0) return null;
   const item = rows[0];
   return [
-    `${item.title} (${item.item_type.toLowerCase()})`,
-    item.topic && `Topic: ${item.topic}${item.parent_topic ? `, part of ${item.parent_topic}` : ""}.`,
-    item.questions && `Questions: ${item.questions}`,
-    item.tech && `Technologies: ${item.tech}.`,
+    `${item.title}.`,
+    item.topic && `${item.topic}${item.parent_topic ? `, ${item.parent_topic}` : ""}.`,
+    item.questions,
+    item.tech && `${item.tech}.`,
   ]
     .filter(Boolean)
     .join(" ");
