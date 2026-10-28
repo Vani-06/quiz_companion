@@ -1,0 +1,377 @@
+import express from "express";
+import cors from "cors";
+import { pool, query } from "./db.js";
+import { refreshInBackground } from "./embeddings.js";
+import { badRequest, errorHandler, route, toId } from "./http.js";
+import { parseItem, parseProjectDetails, parseQuestion, parseQuizDetails, parseTopic } from "./inputs.js";
+import { authRouter } from "./routes/auth.js";
+import { crudRouter } from "./routes/crud.js";
+import { learningRouter } from "./routes/learning.js";
+
+export const app = express();
+
+app.use(cors());
+app.use(express.json());
+
+
+// ---------------------------------------------------------------- health ----
+
+app.get(
+  "/api/health",
+  route(async (_req, res) => {
+    const { rows } = await query("SELECT NOW() AS server_time");
+    res.json({ status: "ok", database: "connected", time: rows[0].server_time });
+  })
+);
+
+// ----------------------------------------------------------------- users ----
+
+app.get(
+  "/api/users",
+  route(async (_req, res) => {
+    const { rows } = await query(
+      `SELECT user_id, full_name, email, skill_level
+       FROM users ORDER BY user_id`
+    );
+    res.json(rows);
+  })
+);
+
+// ------------------------------------------------------------- dashboard ----
+
+app.get(
+  "/api/dashboard",
+  route(async (req, res) => {
+    const userId = toId(req.query.userId);
+    if (!userId) return badRequest(res, "userId is required");
+
+    const user = await query(
+      `SELECT user_id, full_name, email, skill_level
+       FROM users WHERE user_id = $1`,
+      [userId]
+    );
+    if (user.rowCount === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const [summary, proficiency, recommendations, recent] = await Promise.all([
+      query(
+        `SELECT COUNT(*)::int AS attempts,
+                COUNT(DISTINCT item_id)::int AS items_tried,
+                COALESCE(ROUND(AVG(score), 1), 0)::float AS average_score,
+                COALESCE(MAX(score), 0)::float AS best_score
+         FROM learning_record WHERE user_id = $1`,
+        [userId]
+      ),
+      query(
+        `SELECT t.topic_id, t.name AS topic,
+                tp.proficiency_score::float AS proficiency_score,
+                tp.attempts_count, tp.last_updated
+         FROM topic_proficiency tp
+         JOIN topic t ON t.topic_id = tp.topic_id
+         WHERE tp.user_id = $1
+         ORDER BY tp.proficiency_score DESC`,
+        [userId]
+      ),
+      query(
+        `SELECT r.item_id, li.title, li.item_type, li.difficulty,
+                t.name AS topic, r.rank_score::float AS rank_score,
+                r.reason, r.status, r.created_at,
+                -- Reasons written by generate_similar_recommendations() in vectors.sql
+                CASE WHEN r.reason LIKE 'Similar to %'
+                       OR r.reason LIKE 'Builds on %'
+                       OR r.reason = 'Matches your learning history'
+                     THEN 'similar' ELSE 'topic' END AS source
+         FROM recommendation r
+         JOIN learning_item li ON li.item_id = r.item_id
+         LEFT JOIN topic t ON t.topic_id = li.topic_id
+         WHERE r.user_id = $1
+         ORDER BY r.rank_score DESC`,
+        [userId]
+      ),
+      query(
+        `SELECT lr.item_id, li.title, li.item_type, lr.attempt_no,
+                lr.status, lr.score::float AS score,
+                lr.started_at, lr.completed_at
+         FROM learning_record lr
+         JOIN learning_item li ON li.item_id = lr.item_id
+         WHERE lr.user_id = $1
+         ORDER BY lr.started_at DESC
+         LIMIT 8`,
+        [userId]
+      ),
+    ]);
+
+    res.json({
+      user: user.rows[0],
+      summary: {
+        ...summary.rows[0],
+        topics_tracked: proficiency.rowCount,
+        active_recommendations: recommendations.rows.filter(
+          (row) => row.status === "active"
+        ).length,
+      },
+      proficiency: proficiency.rows,
+      recommendations: recommendations.rows,
+      recent: recent.rows,
+    });
+  })
+);
+
+// ---------------------------------------------------------------- topics ----
+
+app.get(
+  "/api/topics",
+  route(async (_req, res) => {
+    const { rows } = await query(
+      `SELECT t.topic_id, t.name, t.description, t.parent_topic_id,
+              p.name AS parent_name,
+              (SELECT COUNT(*)::int FROM learning_item li
+               WHERE li.topic_id = t.topic_id) AS item_count
+       FROM topic t
+       LEFT JOIN topic p ON p.topic_id = t.parent_topic_id
+       ORDER BY t.topic_id`
+    );
+    res.json(rows);
+  })
+);
+
+app.post(
+  "/api/topics",
+  route(async (req, res) => {
+    const topic = parseTopic(req.body);
+
+    const { rows } = await query(
+      `INSERT INTO topic (name, description, parent_topic_id)
+       VALUES ($1, $2, $3) RETURNING *`,
+      [topic.name, topic.description, topic.parent_topic_id]
+    );
+    res.status(201).json(rows[0]);
+  })
+);
+
+app.delete(
+  "/api/topics/:id",
+  route(async (req, res) => {
+    const id = toId(req.params.id);
+    if (!id) return badRequest(res, "Invalid topic id");
+
+    const result = await query("DELETE FROM topic WHERE topic_id = $1", [id]);
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: "Topic not found" });
+    }
+    res.status(204).end();
+  })
+);
+
+// -------------------------------------------------------- learning items ----
+
+app.get(
+  "/api/items",
+  route(async (req, res) => {
+    const type = req.query.type ? String(req.query.type).toUpperCase() : null;
+    const { rows } = await query(
+      `SELECT li.item_id, li.title, li.difficulty, li.item_type, li.created_at,
+              t.topic_id, t.name AS topic,
+              q.time_limit_min, q.pass_mark,
+              p.est_hours::float AS est_hours, p.repo_url,
+              COALESCE(
+                (SELECT ARRAY_AGG(pt.tech ORDER BY pt.tech)
+                 FROM project_tech pt WHERE pt.item_id = li.item_id),
+                '{}') AS tech,
+              (SELECT COUNT(*)::int FROM question qu
+               WHERE qu.quiz_id = li.item_id) AS question_count
+       FROM learning_item li
+       LEFT JOIN topic t ON t.topic_id = li.topic_id
+       LEFT JOIN quiz q ON q.item_id = li.item_id
+       LEFT JOIN project p ON p.item_id = li.item_id
+       WHERE ($1::text IS NULL OR li.item_type = $1)
+       ORDER BY li.item_id`,
+      [type]
+    );
+    res.json(rows);
+  })
+);
+
+app.post(
+  "/api/items",
+  route(async (req, res) => {
+    const item = parseItem(req.body, { creating: true });
+    const details =
+      item.item_type === "QUIZ" ? parseQuizDetails(req.body) : parseProjectDetails(req.body);
+
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+
+      const created = await client.query(
+        `INSERT INTO learning_item
+           (topic_id, title, difficulty, item_type, created_at)
+         VALUES ($1, $2, $3, $4, LOCALTIMESTAMP) RETURNING *`,
+        [item.topic_id, item.title, item.difficulty, item.item_type]
+      );
+      const itemId = created.rows[0].item_id;
+
+      if (item.item_type === "QUIZ") {
+        await client.query(
+          `INSERT INTO quiz (item_id, time_limit_min, pass_mark)
+           VALUES ($1, $2, $3)`,
+          [itemId, details.time_limit_min, details.pass_mark]
+        );
+      } else {
+        await client.query(
+          `INSERT INTO project (item_id, est_hours, repo_url)
+           VALUES ($1, $2, $3)`,
+          [itemId, details.est_hours, details.repo_url]
+        );
+        for (const entry of details.tech) {
+          await client.query(
+            "INSERT INTO project_tech (item_id, tech) VALUES ($1, $2)",
+            [itemId, entry]
+          );
+        }
+      }
+
+      await client.query("COMMIT");
+      res.status(201).json(created.rows[0]);
+      refreshInBackground(itemId);
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+  })
+);
+
+app.delete(
+  "/api/items/:id",
+  route(async (req, res) => {
+    const id = toId(req.params.id);
+    if (!id) return badRequest(res, "Invalid item id");
+
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      // Child rows first, then the subclass row, then the supertype row.
+      await client.query("DELETE FROM project_tech WHERE item_id = $1", [id]);
+      await client.query("DELETE FROM question WHERE quiz_id = $1", [id]);
+      await client.query("DELETE FROM quiz WHERE item_id = $1", [id]);
+      await client.query("DELETE FROM project WHERE item_id = $1", [id]);
+      const result = await client.query(
+        "DELETE FROM learning_item WHERE item_id = $1",
+        [id]
+      );
+      await client.query("COMMIT");
+
+      if (result.rowCount === 0) {
+        return res.status(404).json({ error: "Learning item not found" });
+      }
+      res.status(204).end();
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+  })
+);
+
+// ------------------------------------------------------------- questions ----
+
+app.get(
+  "/api/quizzes/:id/questions",
+  route(async (req, res) => {
+    const id = toId(req.params.id);
+    if (!id) return badRequest(res, "Invalid quiz id");
+
+    const { rows } = await query(
+      `SELECT question_no, question_text, correct_answer, marks
+       FROM question WHERE quiz_id = $1 ORDER BY question_no`,
+      [id]
+    );
+    res.json(rows);
+  })
+);
+
+app.post(
+  "/api/quizzes/:id/questions",
+  route(async (req, res) => {
+    const id = toId(req.params.id);
+    if (!id) return badRequest(res, "Invalid quiz id");
+
+    const question = parseQuestion(req.body);
+
+    const { rows } = await query(
+      `INSERT INTO question
+         (quiz_id, question_no, question_text, correct_answer, marks)
+       VALUES ($1,
+               (SELECT COALESCE(MAX(question_no), 0) + 1
+                FROM question WHERE quiz_id = $1),
+               $2, $3, $4)
+       RETURNING *`,
+      [id, question.question_text, question.correct_answer, question.marks]
+    );
+    res.status(201).json(rows[0]);
+    refreshInBackground(id);
+  })
+);
+
+// ------------------------------------------------------------ attempts ------
+
+app.get(
+  "/api/records",
+  route(async (req, res) => {
+    const userId = toId(req.query.userId);
+    if (!userId) return badRequest(res, "userId is required");
+
+    const { rows } = await query(
+      `SELECT lr.item_id, li.title, li.item_type, t.name AS topic,
+              lr.attempt_no, lr.status, lr.score::float AS score,
+              lr.started_at, lr.completed_at
+       FROM learning_record lr
+       JOIN learning_item li ON li.item_id = lr.item_id
+       LEFT JOIN topic t ON t.topic_id = li.topic_id
+       WHERE lr.user_id = $1
+       ORDER BY lr.started_at DESC`,
+      [userId]
+    );
+    res.json(rows);
+  })
+);
+
+// ------------------------------------------------------ recommendations -----
+
+app.patch(
+  "/api/recommendations/:userId/:itemId",
+  route(async (req, res) => {
+    const userId = toId(req.params.userId);
+    const itemId = toId(req.params.itemId);
+    const status = String(req.body.status ?? "");
+
+    if (!userId || !itemId) return badRequest(res, "Invalid identifiers");
+    if (!["active", "completed", "dismissed"].includes(status)) {
+      return badRequest(res, "status must be active, completed or dismissed");
+    }
+
+    const { rows } = await query(
+      `UPDATE recommendation SET status = $3
+       WHERE user_id = $1 AND item_id = $2 RETURNING *`,
+      [userId, itemId, status]
+    );
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Recommendation not found" });
+    }
+    res.json(rows[0]);
+  })
+);
+
+// --------------------------------------------------- learning flow, auth ----
+
+app.use("/api", learningRouter);
+app.use("/api", authRouter);
+app.use("/api", crudRouter);
+
+// --------------------------------------------------------------- errors -----
+
+app.use(errorHandler);

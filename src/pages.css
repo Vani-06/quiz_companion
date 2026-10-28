@@ -1,0 +1,461 @@
+/* Styles for the database-backed pages (forms, tables, cards). */
+
+.user-switcher {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #9697ae;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.user-switcher select,
+.form-panel select,
+.form-panel input,
+.form-panel textarea,
+.toolbar-search {
+  width: 100%;
+  padding: 10px 12px;
+  color: #f1f0ff;
+  font: inherit;
+  font-size: 13px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  outline: none;
+}
+
+.user-switcher select {
+  width: auto;
+  min-width: 160px;
+}
+
+.user-switcher select:focus,
+.form-panel select:focus,
+.form-panel input:focus,
+.form-panel textarea:focus,
+.toolbar-search:focus {
+  border-color: #8b7cff;
+}
+
+option {
+  color: #f1f0ff;
+  background: #191a2b;
+}
+
+.panel-title {
+  margin: 0 0 14px;
+  font: 600 15px 'Space Grotesk', sans-serif;
+}
+
+.two-column {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr);
+  gap: 19px;
+  align-items: start;
+  margin-bottom: 19px;
+}
+
+.form-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.form-panel label {
+  display: grid;
+  gap: 6px;
+  color: #9697ae;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.form-panel textarea {
+  resize: vertical;
+}
+
+.form-panel .primary-button {
+  justify-self: start;
+}
+
+.recommendations-panel {
+  margin-bottom: 19px;
+}
+
+.rec-reason {
+  color: #898aa4;
+  font-size: 11px;
+}
+
+.rec-actions {
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.rec-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+.mini-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  color: #c8c0ff;
+  font-size: 11px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+}
+
+.mini-button:hover {
+  border-color: #8b7cff;
+}
+
+.mini-button.done {
+  color: #43e6c5;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.data-table th {
+  padding: 10px 12px;
+  color: #777891;
+  font-size: 10px;
+  letter-spacing: 1.2px;
+  text-align: left;
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.data-table td {
+  padding: 12px;
+  vertical-align: top;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.cell-note {
+  margin-top: 4px;
+  color: #898aa4;
+  font-size: 11px;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.toolbar .category-filters {
+  margin: 0;
+}
+
+.toolbar-search {
+  width: 240px;
+}
+
+.item-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.item-card {
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+}
+
+.item-card h3 {
+  margin: 12px 0 8px;
+  font-size: 16px;
+}
+
+.item-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.item-meta {
+  margin: 4px 0;
+  color: #9697ae;
+  font-size: 12px;
+}
+
+.type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  border-radius: 20px;
+}
+
+.type-badge.quiz {
+  color: #b9afff;
+  background: rgba(139, 124, 255, 0.16);
+}
+
+.type-badge.project {
+  color: #43e6c5;
+  background: rgba(67, 230, 197, 0.12);
+}
+
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.tag {
+  padding: 3px 9px;
+  color: #b9afff;
+  font-size: 11px;
+  white-space: nowrap;
+  background: rgba(139, 124, 255, 0.14);
+  border-radius: 20px;
+}
+
+.question-list {
+  display: grid;
+  gap: 14px;
+  padding-left: 0;
+  margin: 18px 0 0;
+  list-style: none;
+}
+
+.question-list li {
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+}
+
+.question-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.error-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  margin-bottom: 18px;
+  color: #ffb3bd;
+  font-size: 13px;
+  background: rgba(255, 90, 110, 0.1);
+  border: 1px solid rgba(255, 90, 110, 0.35);
+  border-radius: 12px;
+}
+
+.error-banner button {
+  color: inherit;
+  font-size: 18px;
+  background: transparent;
+  border: 0;
+}
+
+@media (max-width: 1000px) {
+  .two-column {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 650px) {
+  .item-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .toolbar-search {
+    width: 100%;
+  }
+
+  .user-switcher span {
+    display: none;
+  }
+}
+
+/* Learning flow: quiz results, leaderboard, account */
+
+.notice-banner {
+  padding: 12px 16px;
+  margin-bottom: 18px;
+  color: #9ff3e1;
+  font-size: 13px;
+  background: rgba(67, 230, 197, 0.08);
+  border: 1px solid rgba(67, 230, 197, 0.3);
+  border-radius: 12px;
+}
+
+.recommendations-panel .notice-banner {
+  margin: 14px 0 0;
+}
+
+.two-column.even {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.quiz-result {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 24px 12px;
+  text-align: center;
+}
+
+.quiz-result.passed {
+  color: #43e6c5;
+}
+
+.quiz-result.failed {
+  color: #ff7a8a;
+}
+
+.quiz-score {
+  color: #f1f0ff;
+  font: 600 44px 'Space Grotesk', sans-serif;
+}
+
+.row-highlight td {
+  background: rgba(139, 124, 255, 0.1);
+}
+
+.rank-badge {
+  display: inline-grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  color: #c8c0ff;
+  font-weight: 700;
+  background: rgba(139, 124, 255, 0.16);
+  border-radius: 50%;
+}
+
+.strength-list {
+  display: grid;
+  gap: 10px;
+}
+
+.strength-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  font-size: 13px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+}
+
+.strength-badge {
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 20px;
+}
+
+.strength-badge.strong {
+  color: #43e6c5;
+  background: rgba(67, 230, 197, 0.12);
+}
+
+.strength-badge.average {
+  color: #ffb86b;
+  background: rgba(255, 184, 107, 0.12);
+}
+
+.strength-badge.weak {
+  color: #ff7a8a;
+  background: rgba(255, 122, 138, 0.12);
+}
+
+.category-filter svg {
+  vertical-align: -2px;
+  margin-right: 4px;
+}
+
+@media (max-width: 1000px) {
+  .two-column.even {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Edit and delete controls */
+
+.row-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.form-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.form-panel select:disabled,
+.form-panel input:disabled {
+  opacity: 0.6;
+}
+
+.danger-button {
+  color: #ff9aa6;
+  border-color: rgba(255, 90, 110, 0.35);
+}
+
+.profile-panel {
+  margin-bottom: 19px;
+}
+
+.profile-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+@media (max-width: 650px) {
+  .profile-fields {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Recommendation source badge */
+
+.rec-source {
+  display: inline-block;
+  padding: 1px 7px;
+  margin-right: 6px;
+  color: #b9afff;
+  font-size: 10px;
+  font-weight: 700;
+  background: rgba(139, 124, 255, 0.14);
+  border-radius: 20px;
+}
+
+.rec-source.similar {
+  color: #43e6c5;
+  background: rgba(67, 230, 197, 0.12);
+}
