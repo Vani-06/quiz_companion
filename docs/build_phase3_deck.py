@@ -137,7 +137,7 @@ table(s, 0.667, 1.45, 12, [2, 5, 5], ["Phase", "Delivered", "Evidence"], [
 text(s, 0.667, 3.7, 12, 2.4, [
     ("Phase 3 adds", {"bold": True, "size": 16, "color": NAVY}),
     ("A React web app and an Express API that read and write PostgreSQL on every screen.", {}),
-    ("A Java JDBC client that runs the same retrieval, DML and business-logic functions.", {}),
+    ("Java JDBC and PowerShell ODBC clients that run the same retrieval, DML and business-logic functions.", {}),
     ("Quiz taking graded inside the database, student sign-up, leaderboard and full edit/delete.", {}),
     ("Similar-item recommendations with vector embeddings (pgvector), on top of weak-topic rules.", {}),
 ], fill=LIGHT, pad=0.2)
@@ -149,7 +149,7 @@ text(s, 8.9, 1.5, 3.8, 5.2, [
     ("Three tiers", {"bold": True, "size": 16, "color": NAVY}),
     ("React screens call an Express API over HTTP.", {}),
     ("The API validates input and runs parameterised SQL through a node-postgres connection pool.", {}),
-    ("A Java client connects straight to PostgreSQL with the JDBC driver.", {}),
+    ("A Java client (JDBC) and a PowerShell client (ODBC) connect straight to PostgreSQL.", {}),
     ("All rules live in the database, so every client behaves the same way.", {}),
 ], fill=LIGHT, pad=0.18, size=13)
 
@@ -255,6 +255,33 @@ text(s, 8.3, 1.4, 4.4, 4.3, [
     ("Password comes from DB_PASSWORD or a prompt, never from source code.", {}),
 ], fill=LIGHT, pad=0.18, size=13)
 
+# ---- 10b. ODBC ------------------------------------------------------------------
+s = slide("Part 9 · Database connectivity", "ODBC Client")
+code(s, 0.667, 1.4, 7.4, 4.3, [
+    "$driver = Get-OdbcDriver -Platform '64-bit' |",
+    "    Where-Object Name -like '*UNICODE*'",
+    "$cs = \"Driver={$($driver.Name)};Server=localhost;\"",
+    "    + \"Port=5432;Database=quiz_companion;Uid=postgres;Pwd=...\"",
+    "$db = New-Object System.Data.Odbc.OdbcConnection($cs)",
+    "$db.Open()",
+    "",
+    "# parameterised INSERT",
+    "INSERT INTO topic (name, description, parent_topic_id)",
+    "VALUES (?, ?, ?) RETURNING topic_id",
+    "",
+    "# grade and record in one transaction",
+    "SELECT grade_quiz(?, CAST(? AS jsonb))",
+    "SELECT record_attempt(?, ?, 'completed', CAST(? AS numeric))",
+    "$tx.Commit()   # $tx.Rollback() on error",
+], size=12)
+text(s, 8.3, 1.4, 4.4, 4.3, [
+    ("odbc/OdbcDemo.ps1", {"bold": True, "size": 16, "color": NAVY}),
+    ("PostgreSQL ODBC driver (psqlODBC, Unicode, 64-bit) through System.Data.Odbc.", {}),
+    ("Same menu and -Demo run as the JDBC client.", {}),
+    ("The demo ends with a rejected delete: trigger error 23001 “Topic 3 still has learning items”.", {}),
+    ("The quiz attempt is rolled back, so the sample data stays unchanged.", {}),
+], fill=LIGHT, pad=0.18, size=13)
+
 # ---- 11. testing -------------------------------------------------------------------
 s = slide("Part 10 · Testing and validation", "Test Strategy and Results")
 table(s, 0.667, 1.4, 6.4, [3, 1, 1, 1], ["Category", "Total", "Passed", "Failed"], [
@@ -267,7 +294,7 @@ text(s, 0.667, 4.1, 6.4, 2.6, [
     ("Three levels", {"bold": True, "size": 15, "color": NAVY}),
     ("SQL: business_logic_tests.sql, rolled back.", {}),
     ("API: 31 automated tests on a separate, rebuilt test database.", {}),
-    ("Front end and JDBC: each screen run with valid and invalid input.", {}),
+    ("Front end, JDBC and ODBC: each run with valid and invalid input.", {}),
     ("One case failed first (NOW() vs TIMESTAMPTZ) and passed after the fix.", {}),
 ], fill=LIGHT, pad=0.18, size=13)
 code(s, 7.3, 1.4, 5.4, 5.3, [
@@ -295,7 +322,7 @@ table(s, 0.667, 1.4, 12, [4, 1.6, 6.4], ["Module (Phase 1 scope)", "Status", "Re
     ["Leaderboard", "Completed", "View v_leaderboard"],
     ["Student accounts", "Partly", "Sign-up and sign-in with hashed passwords; no sessions or roles yet"],
     ["Caching of frequent reads (Redis)", "Not built", "Indexes added instead; not needed at this data size"],
-    ["Database connectivity", "Completed", "node-postgres for the web app; pgJDBC console client"],
+    ["Database connectivity", "Completed", "node-postgres for the web app; JDBC and ODBC console clients"],
 ], size=12, row_h=0.5)
 
 # ---- 13. demo flow ------------------------------------------------------------------
@@ -305,7 +332,7 @@ text(s, 0.667, 2.9, 12, 3.6, [
     ("Then show the database side", {"bold": True, "size": 16, "color": NAVY}),
     ("psql: SELECT the new attempt and the updated topic_proficiency row.", {}),
     ("Topics: add, edit, delete, then try to delete Arrays to show the trigger message.", {}),
-    ("Java: run JdbcDemo --demo and point out the same functions being called.", {}),
+    ("Java and ODBC: run JdbcDemo --demo and OdbcDemo.ps1 -Demo; the same functions are called.", {}),
     ("Terminal: npm test, 31 of 31 passing.", {}),
 ], fill=LIGHT, pad=0.22, size=14)
 
@@ -313,7 +340,7 @@ text(s, 0.667, 2.9, 12, 3.6, [
 s = slide("Conclusion", "Conclusion and Future Enhancements")
 table(s, 0.667, 1.4, 12, [2.5, 9.5], ["Area", "Phase 3 outcome"], [
     ["Design to delivery", "Phase 1 EER and 3NF schema implemented in PostgreSQL and used by a working application"],
-    ["Connectivity", "Web app through node-postgres; Java client through JDBC; all CRUD operations"],
+    ["Connectivity", "Web app through node-postgres; Java client through JDBC; PowerShell client through ODBC; all CRUD operations"],
     ["Database logic", "Constraints, functions, triggers and views enforce every rule for every client"],
     ["Quality", "23 documented test cases, 31 automated tests, all passing"],
     ["Beyond the plan", "pgvector similarity recommendations; indexes on foreign keys"],
