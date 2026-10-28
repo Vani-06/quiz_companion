@@ -39,6 +39,10 @@ SQL-level checks for the business rules are in `db/business_logic_tests.sql` (th
 
 `jdbc/JdbcDemo.java` connects over JDBC and runs retrieval, DML and the business-logic functions. See [jdbc/README.md](jdbc/README.md).
 
+## ODBC client
+
+`odbc/OdbcDemo.ps1` connects through the PostgreSQL ODBC driver and runs the same operations. See [odbc/README.md](odbc/README.md).
+
 ## Layout
 
 - `db/` DDL (`schema.sql`), sample data (`seed.sql`, `seed_more.sql`), business logic (`business_logic.sql`), indexes (`indexes.sql`), vector search (`vectors.sql`), checks (`verify.sql`, `business_logic_tests.sql`)
@@ -46,6 +50,7 @@ SQL-level checks for the business rules are in `db/business_logic_tests.sql` (th
 - `src/` React pages: Dashboard, My Learning, Quizzes (take quiz and question bank), Leaderboard, Learning Items, Topics, Account
 - `test/` API and vector recommendation tests (`node:test`)
 - `jdbc/` Java JDBC console client
+- `odbc/` PowerShell ODBC console client
 - `docs/` Phase 2 deck, its build script and the backend work plan
 
 Who built what: [docs/BACKEND_PLAN.md](docs/BACKEND_PLAN.md).
