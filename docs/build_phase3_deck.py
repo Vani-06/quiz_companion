@@ -31,6 +31,9 @@ for sh in prs.slides[0].shapes:
     if sh.has_text_frame:
         for p in sh.text_frame.paragraphs:
             for r in p.runs:
+                if r.text.strip() == "Adaptive Learning Platform":
+                    r.text = "SkillSync: Adaptive Quiz Recommendation & Learning Analytics Platform"
+                    r.font.size = Pt(23)
                 r.text = (r.text.replace("Phase 2: Implementation Core", "Phase 3: Integration & Delivery")
                           .replace("Database implementation, data population and business logic",
                                    "Front end, database connectivity, testing and demonstration"))
@@ -75,7 +78,7 @@ def slide(kicker, title):
     text(s, 0.667, 0.42, 12, 0.3, [(kicker, {"bold": True, "color": GOLD, "size": 12})], pad=0)
     text(s, 0.667, 0.78, 12, 0.5, [(title, {"bold": True, "color": NAVY, "size": 27, "font": "Georgia"})], pad=0)
     text(s, 0.667, 6.96, 12, 0.3,
-         [(f"Adaptive Learning Platform · Phase 3 · {page[0]}", {"size": 12, "color": "6A7179"})], pad=0)
+         [(f"SkillSync · Phase 3 · {page[0]}", {"size": 12, "color": "6A7179"})], pad=0)
     return s
 
 
